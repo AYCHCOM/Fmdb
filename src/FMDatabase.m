@@ -1138,6 +1138,36 @@ void FMDBBlockSQLiteCallBackFunction(sqlite3_context *context, int argc, sqlite3
 #endif
 }
 
+int FMDBBlockSQLiteCollationCallBackFunction(void *pArg, int encoding1, const void *cStr1, int encoding2, const void *cStr2);
+int FMDBBlockSQLiteCollationCallBackFunction(void *pArg, int encoding1, const void *cStr1, int encoding2, const void *cStr2) {
+	NSString *str1 = [NSString stringWithCString:cStr1 encoding:NSUTF8StringEncoding];
+	NSString *str2 = [NSString stringWithCString:cStr2 encoding:NSUTF8StringEncoding];
+#if ! __has_feature(objc_arc)
+	NSComparisonResult (^block)(NSString *str1, NSString *str2) = (id)pArg;
+#else
+	NSComparisonResult (^block)(NSString *str1, NSString *str2) = (__bridge id)pArg;
+#endif
+    return block(str1, str2);
+}
+
+- (void)makeCollationNamed:(NSString*)name withBlock:(NSComparisonResult (^)(NSString *str1, NSString *str2))block {
+    
+    if (!_openFunctions) {
+        _openFunctions = [NSMutableSet new];
+    }
+    
+    id b = FMDBReturnAutoreleased([block copy]);
+    
+    [_openFunctions addObject:b];
+    
+    /* I tried adding custom functions to release the block when the connection is destroyed- but they seemed to never be called, so we use _openFunctions to store the values instead. */
+#if ! __has_feature(objc_arc)
+    sqlite3_create_collation([self sqliteHandle], [name UTF8String], SQLITE_UTF8, (void*)b, &FMDBBlockSQLiteCollationCallBackFunction);
+#else
+    sqlite3_create_collation([self sqliteHandle], [name UTF8String], SQLITE_UTF8, (__bridge void*)b, &FMDBBlockSQLiteCollationCallBackFunction);
+#endif
+}
+
 @end
 
 

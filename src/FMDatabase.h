@@ -137,6 +137,7 @@
 - (int)changes;
 
 - (void)makeFunctionNamed:(NSString*)name maximumArguments:(int)count withBlock:(void (^)(sqlite3_context *context, int argc, sqlite3_value **argv))block;
+- (void)makeCollationNamed:(NSString*)name withBlock:(NSComparisonResult (^)(NSString *str1, NSString *str2))block;
 
 @end
 
