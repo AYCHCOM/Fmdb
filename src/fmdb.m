@@ -1006,6 +1006,30 @@ int main (int argc, const char * argv[]) {
         
         
     }];
+	
+	[queue inDatabase:^(FMDatabase *adb) {
+		
+		[adb executeUpdate:@"create table ctest (foo text)"];
+		NSArray *values = @[@"a", @"C", @"A", @"d", @"B"];
+		for (NSString *value in values) {
+			[adb executeUpdate:@"insert into ctest values (?)", value];
+		}
+		
+		[adb makeCollationNamed:@"LowerCaseCollate" withBlock:^NSComparisonResult(NSString *str1, NSString *str2) {
+			return [str1 caseInsensitiveCompare:str2];
+		}];
+		
+		FMResultSet *ars = [adb executeQuery:@"select * from ctest order by foo collate LowerCaseCollate"];
+		NSUInteger characterIndex = 0;
+		NSArray *sortedValues = [values sortedArrayUsingComparator:^NSComparisonResult(id obj1, id obj2) {
+			return [obj1 caseInsensitiveCompare:obj2];
+		}];
+		while ([ars next]) {
+			NSLog(@"Is %@ equal to (case insensitive) %@", sortedValues[characterIndex], [ars stringForColumnIndex:0]);
+			FMDBQuickCheck([sortedValues[characterIndex] caseInsensitiveCompare:[ars stringForColumnIndex:0]] == NSOrderedSame);
+			characterIndex++;
+		}
+	}];
     
     
     NSLog(@"That was version %@ of sqlite", [FMDatabase sqliteLibVersion]);
