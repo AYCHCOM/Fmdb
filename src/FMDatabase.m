@@ -1138,12 +1138,14 @@ void FMDBBlockSQLiteCallBackFunction(sqlite3_context *context, int argc, sqlite3
 #endif
 }
 
-int FMDBBlockSQLiteCollationCallBackFunction(void *pArg, int encoding1, const void *cStr1, int encoding2, const void *cStr2);
-int FMDBBlockSQLiteCollationCallBackFunction(void *pArg, int encoding1, const void *cStr1, int encoding2, const void *cStr2) {
-	NSString *str1 = [NSString stringWithCString:cStr1 encoding:NSUTF8StringEncoding];
-	NSString *str2 = [NSString stringWithCString:cStr2 encoding:NSUTF8StringEncoding];
+int FMDBBlockSQLiteCollationCallBackFunction(void *pArg, int length1, const void *cStr1, int length2, const void *cStr2);
+int FMDBBlockSQLiteCollationCallBackFunction(void *pArg, int length1, const void *cStr1, int length2, const void *cStr2) {
+	NSString *str1 = [[NSString alloc] initWithBytes:cStr1 length:length1 encoding:NSUTF8StringEncoding];
+	NSString *str2 = [[NSString alloc] initWithBytes:cStr2 length:length2 encoding:NSUTF8StringEncoding];
 #if ! __has_feature(objc_arc)
 	NSComparisonResult (^block)(NSString *str1, NSString *str2) = (id)pArg;
+	[str1 autorelease];
+	[str2 autorelease];
 #else
 	NSComparisonResult (^block)(NSString *str1, NSString *str2) = (__bridge id)pArg;
 #endif
